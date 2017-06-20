@@ -1,15 +1,17 @@
 #! /usr/bin/env python3
-"""Pandoc filter that provides rudimentary support for two things:
+"""Pandoc filter that provides rudimentary support for three things:
 Allows different types of figures (schemes, charts, graphs) to be used
-(esp. in LaTeX), and implements cross-referencing for said figures (as a highly
-simplified version of the support in pandoc-crossref).
+(esp. in LaTeX), implements cross-referencing for said figures (as a
+highly simplified version of the support in pandoc-crossref), and
+supports the wrapfig LaTeX package to wrap text around figures in pdf
+(and LaTeX) output.
 
 """
 
 from pandocfilters import toJSONFilters, Str, Image, RawInline
 import re, textwrap
 
-# Reference regex pattern used to extract id_tag
+# Reference regex pattern used to extract id_tag (for cross-referencing)
 REF_PAT = re.compile(r'\[?@([^\s\]]*)\]?')
 
 # Types of chemistry figures supported by LaTeX (e.g., with achemso)
@@ -22,7 +24,8 @@ known_classes = {}
 
 def parse_refs(key, val, fmt, meta):
     """Runs through citations in the document, replacing those with ids
-    found in known_ids with the appropriate numbers or LaTeX \ref{} commands.
+    found in known_ids with the appropriate numbers or LaTeX \ref{}
+    commands.
 
     """
 
@@ -37,11 +40,13 @@ def parse_refs(key, val, fmt, meta):
         
 
 def process_images(key, val, fmt, meta):
-    """Runs through figures in the document, counting figures of a particular
-    type. For LaTeX, adds appropriate code for non-"figure" environments and
-    leaves normal figures untouched (\label commands are added automatically
-    already). For other formats, adds preamble to caption with figure type and
-    number.
+    """Runs through figures in the document, counting figures of a
+    particular type. For LaTeX, adds appropriate code for non-"figure"
+    environments and leaves normal figures untouched (\label commands
+    are added automatically already). For other formats, adds preamble
+    to caption with figure type and number. If the wwidth attribute is
+    passed to the figure, hardcodes the appropriate LaTeX code for
+    the wrapfig package through the wrapfloat environment.
 
     """
 
@@ -49,33 +54,68 @@ def process_images(key, val, fmt, meta):
         attrs, caption, target = val
 
         if attrs[1]:
-            cls = attrs[1][0] # Class attribute for the image.
+            cls = attrs[1][0] # Class attribute for the image
         
             if cls in known_classes:
                 known_classes[cls] += 1
             else:
                 known_classes[cls] = 1
 
+            # Assign figure/scheme/chart/graph number.
             known_ids[attrs[0]] = str(known_classes[cls])
 
+            # Loop through image attributes to locate wrapfig-relevant
+            # attributes. If found, set latex_wrap to True and read
+            # size and position (optional).
+            latex_wrap = False
+            latex_pos = "r" # Default position
+            for other_atr in attrs[2]:
+                if other_atr[0] == 'wwidth':
+                    latex_wrap = True
+                    latex_size = other_atr[1]
+                elif other_atr[0] == 'wpos':
+                    latex_pos = other_atr[1]
+
             if fmt in ['latex','pdf']:
-                if cls not in ALT_LATEX_FIGS:
-                    return Image(attrs, caption, target)
+                # Only use "\caption" command if caption is not empty.
+                if caption != []:
+                    caption_text = ([RawInline(fmt, r'\caption{')] + caption 
+                                   + [RawInline(fmt, r'}')])
                 else:
-                    return [RawInline(fmt, textwrap.dedent("""\
-                        \\begin{{{cls}}}
-                        \\centering
-                        \\caption{{""".format(cls=cls)))] \
-                        + caption \
-                        + [RawInline(fmt, textwrap.dedent("""\
-                        }}\\label{{{id_tag}}}
-                        \\includegraphics{{{file}}}
-                        \\end{{{cls}}}
-                            """.format(cls=cls, file=target[0], 
-                                       id_tag=attrs[0])))]
+                    caption_text = []
+
+                if latex_wrap:
+                    return ([RawInline(fmt, textwrap.dedent(r"""
+                        \begin{{wrapfloat}}{{{cls}}}{{{pos}}}{{{size}}}
+                        \centering
+                        \includegraphics{{{file}}}
+                        """.format(cls=cls, file=target[0], size=latex_size,
+                                   pos = latex_pos)))]
+                        + caption_text
+                        + [RawInline(fmt, textwrap.dedent(r"""
+                        \label{{{id_tag}}}
+                        \end{{wrapfloat}}
+                        """.format(cls=cls, id_tag=attrs[0])))])
+                else:
+                    if cls not in ALT_LATEX_FIGS:
+                        # Stick to default processing if normal figure.
+                        return Image(attrs, caption, target)
+                    else:
+                        # Raw LaTeX if scheme, chart, etc.
+                        return ([RawInline(fmt, textwrap.dedent(r"""
+                            \begin{{{cls}}}
+                            \centering
+                            \includegraphics{{{file}}}""".format(cls=cls, 
+                                                           file=target[0])))]
+                            + caption_text
+                            + [RawInline(fmt, textwrap.dedent(r"""
+                            \label{{{id_tag}}}
+                            \end{{{cls}}}
+                            """.format(cls=cls, id_tag=attrs[0])))])
             else:
-                new_caption = [Str("{} ".format(cls.capitalize()) \
-                               + known_ids[attrs[0]] + ". ")] + caption
+                # Add label to caption for non-LaTeX output.
+                new_caption = ([Str("{} ".format(cls.capitalize())
+                               + known_ids[attrs[0]] + ". ")] + caption)
                 return Image(attrs, new_caption, target)
 
 if __name__ == '__main__':
