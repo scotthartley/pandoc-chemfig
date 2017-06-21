@@ -8,7 +8,7 @@ supports the wrapfig LaTeX package to wrap text around figures in pdf
 
 """
 
-from pandocfilters import toJSONFilters, Str, Image, RawInline
+from pandocfilters import toJSONFilters, Str, Image, Strong, Emph, RawInline
 import re, textwrap
 
 # Reference regex pattern used to extract id_tag (for cross-referencing)
@@ -43,10 +43,10 @@ def process_images(key, val, fmt, meta):
     """Runs through figures in the document, counting figures of a
     particular type. For LaTeX, adds appropriate code for non-"figure"
     environments and leaves normal figures untouched (\label commands
-    are added automatically already). For other formats, adds preamble
-    to caption with figure type and number. If the wwidth attribute is
-    passed to the figure, hardcodes the appropriate LaTeX code for
-    the wrapfig package through the wrapfloat environment.
+    are added automatically already). If the wwidth attribute is passed
+    to the figure, hardcodes the appropriate LaTeX code for the wrapfig
+    package through the wrapfloat environment. For other formats, adds
+    preamble to caption with figure type and number.
 
     """
 
@@ -79,8 +79,8 @@ def process_images(key, val, fmt, meta):
             if fmt in ['latex','pdf']:
                 # Only use "\caption" command if caption is not empty.
                 if caption != []:
-                    caption_text = ([RawInline(fmt, r'\caption{')] + caption 
-                                   + [RawInline(fmt, r'}')])
+                    caption_text = ([RawInline(fmt, r"\caption{")] + caption 
+                                   + [RawInline(fmt, r"}")])
                 else:
                     caption_text = []
 
@@ -114,9 +114,29 @@ def process_images(key, val, fmt, meta):
                             """.format(cls=cls, id_tag=attrs[0])))])
             else:
                 # Add label to caption for non-LaTeX output.
-                new_caption = ([Str("{} ".format(cls.capitalize())
-                               + known_ids[attrs[0]] + ". ")] + caption)
+
+                # Default labels, suffix, and format
+                label = [Strong([Str(cls.capitalize() + " ")])]
+                suffix = [Strong([Str(". ")])]
+
+                if 'fig-abbr' in meta:
+                    if cls in meta['fig-abbr']['c']:
+                        label = meta['fig-abbr']['c'][cls]['c']
+                    if 'suffix' in meta['fig-abbr']['c']:
+                        suffix = meta['fig-abbr']['c']['suffix']['c']
+                
+                # Label takes format of abbreviation.
+                if label[0]['t'] == 'Strong':
+                    number = [Strong([Str(known_ids[attrs[0]])])]
+                elif label[0]['t'] == 'Emph':
+                    number = [Emph([Str(known_ids[attrs[0]])])]
+                else:
+                    number = [Str(known_ids[attrs[0]])]
+
+                new_caption = label + number + suffix + caption
+
                 return Image(attrs, new_caption, target)
+
 
 if __name__ == '__main__':
     toJSONFilters([process_images, parse_refs])
