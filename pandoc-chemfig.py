@@ -34,7 +34,7 @@ def parse_refs(key, val, fmt, meta):
             id_tag = REF_PAT.match(val[1][0]['c']).groups()[0]
             if id_tag in known_ids:
                 if fmt in ['latex','pdf']:
-                    return RawInline(fmt, '\\ref{{{}}}'.format(id_tag))
+                    return RawInline(fmt, "\\ref{{{}}}".format(id_tag))
                 else:
                     return Str(known_ids[id_tag])
         
@@ -68,7 +68,7 @@ def process_images(key, val, fmt, meta):
             # attributes. If found, set latex_wrap to True and read
             # size and position (optional).
             latex_wrap = False
-            latex_pos = "r" # Default position
+            latex_pos = 'r' # Default position
             for other_atr in attrs[2]:
                 if other_atr[0] == 'wwidth':
                     latex_wrap = True
