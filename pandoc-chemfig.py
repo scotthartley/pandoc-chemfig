@@ -68,13 +68,17 @@ def process_images(key, val, fmt, meta):
             # attributes. If found, set latex_wrap to True and read
             # size and position (optional).
             latex_wrap = False
-            latex_pos = 'r' # Default position
+            latex_wrap_pos = 'r' # Default position
+            latex_fig_place = False
             for other_atr in attrs[2]:
                 if other_atr[0] == 'wwidth':
                     latex_wrap = True
                     latex_size = other_atr[1]
                 elif other_atr[0] == 'wpos':
-                    latex_pos = other_atr[1]
+                    latex_wrap_pos = other_atr[1]
+                elif other_atr[0] == 'lpos':
+                    latex_fig_place = True
+                    latex_fig_place_pos = other_atr[1]
 
             if fmt in ['latex','pdf']:
                 # Only use "\caption" command if caption is not empty.
@@ -90,12 +94,24 @@ def process_images(key, val, fmt, meta):
                         \centering
                         \includegraphics{{{file}}}
                         """.format(cls=cls, file=target[0], size=latex_size,
-                                   pos = latex_pos)))]
+                                   pos=latex_wrap_pos)))]
                         + caption_text
                         + [RawInline(fmt, textwrap.dedent(r"""
                         \label{{{id_tag}}}
                         \end{{wrapfloat}}
                         """.format(cls=cls, id_tag=attrs[0])))])
+                elif latex_fig_place:
+                    return ([RawInline(fmt, textwrap.dedent(r"""
+                            \begin{{{cls}}}[{pos}]
+                            \centering
+                            \includegraphics{{{file}}}""".format(cls=cls,
+                                                           pos=latex_fig_place_pos, 
+                                                           file=target[0])))]
+                            + caption_text
+                            + [RawInline(fmt, textwrap.dedent(r"""
+                            \label{{{id_tag}}}
+                            \end{{{cls}}}
+                            """.format(cls=cls, id_tag=attrs[0])))])
                 else:
                     if cls not in ALT_LATEX_FIGS:
                         # Stick to default processing if normal figure.
