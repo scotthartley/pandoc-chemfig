@@ -18,6 +18,8 @@ Unlike my previous attempts at similar functionality ([pandoc-wrapfig][], [pando
 
 Inserts a new "scheme" (`.scheme`). Assuming this is the second scheme in the document, the caption will show up as "**Scheme 2.** Scheme caption." in non-LaTeX output and as defined by the template in LaTeX output. Its number can be referenced in the text with `@sch-label`. In LaTeX/pdf output, it will use the wrapfig package and pass along the `wwidth` and `wpos` attributes; in this case, the figure will float on the left (`wpos=l`) with the width set according to the inherent width of the figure (`wwidth=0in`).
 
+The script ignores images with no caption text. If these need to be included, an escaped space (`![\ ](path/to/fig){#label .figure}`) can be used.
+
 In addition to enabling text wrapping, standard LaTeX figure placement can be specified using the `lpos` attribute. For example, setting `lpos=H` for a figure will result in the LaTeX code `\begin{figure}[H]`.
 
 The default label formatting in non-LaTeX output can be overridden by passing the `fig-abbr` variable as metadata. For example, including the following:

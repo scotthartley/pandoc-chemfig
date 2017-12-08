@@ -53,7 +53,7 @@ def process_images(key, val, fmt, meta):
     if key == 'Image':
         attrs, caption, target = val
 
-        if attrs[1]:
+        if attrs[1] and caption:
             cls = attrs[1][0] # Class attribute for the image
         
             if cls in known_classes:
