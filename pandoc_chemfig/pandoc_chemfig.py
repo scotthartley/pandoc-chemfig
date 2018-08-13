@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 """Pandoc filter that provides rudimentary support for three things:
 Allows different types of figures (schemes, charts, graphs) to be used
 (esp. in LaTeX), implements cross-referencing for said figures (as a
@@ -37,7 +36,7 @@ def parse_refs(key, val, fmt, meta):
                     return RawInline(fmt, "\\ref{{{}}}".format(id_tag))
                 else:
                     return Str(known_ids[id_tag])
-        
+
 
 def process_images(key, val, fmt, meta):
     """Runs through figures in the document, counting figures of a
@@ -55,7 +54,7 @@ def process_images(key, val, fmt, meta):
 
         if attrs[1] and caption:
             cls = attrs[1][0] # Class attribute for the image
-        
+
             if cls in known_classes:
                 known_classes[cls] += 1
             else:
@@ -83,7 +82,7 @@ def process_images(key, val, fmt, meta):
             if fmt in ['latex','pdf']:
                 # Only use "\caption" command if caption is not empty.
                 if caption != []:
-                    caption_text = ([RawInline(fmt, r"\caption{")] + caption 
+                    caption_text = ([RawInline(fmt, r"\caption{")] + caption
                                    + [RawInline(fmt, r"}")])
                 else:
                     caption_text = []
@@ -105,7 +104,7 @@ def process_images(key, val, fmt, meta):
                             \begin{{{cls}}}[{pos}]
                             \centering
                             \includegraphics{{{file}}}""".format(cls=cls,
-                                                           pos=latex_fig_place_pos, 
+                                                           pos=latex_fig_place_pos,
                                                            file=target[0])))]
                             + caption_text
                             + [RawInline(fmt, textwrap.dedent(r"""
@@ -121,7 +120,7 @@ def process_images(key, val, fmt, meta):
                         return ([RawInline(fmt, textwrap.dedent(r"""
                             \begin{{{cls}}}
                             \centering
-                            \includegraphics{{{file}}}""".format(cls=cls, 
+                            \includegraphics{{{file}}}""".format(cls=cls,
                                                            file=target[0])))]
                             + caption_text
                             + [RawInline(fmt, textwrap.dedent(r"""
@@ -140,7 +139,7 @@ def process_images(key, val, fmt, meta):
                         label = meta['fig-abbr']['c'][cls]['c']
                     if 'suffix' in meta['fig-abbr']['c']:
                         suffix = meta['fig-abbr']['c']['suffix']['c']
-                
+
                 # Label takes format of abbreviation.
                 if label[0]['t'] == 'Strong':
                     number = [Strong([Str(known_ids[attrs[0]])])]
@@ -154,5 +153,9 @@ def process_images(key, val, fmt, meta):
                 return Image(attrs, new_caption, target)
 
 
-if __name__ == '__main__':
+def main():
     toJSONFilters([process_images, parse_refs])
+
+
+if __name__ == '__main__':
+    main()
