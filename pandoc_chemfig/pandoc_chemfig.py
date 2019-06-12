@@ -69,6 +69,7 @@ def process_images(key, val, fmt, meta):
             latex_wrap = False
             latex_wrap_pos = 'r' # Default position
             latex_fig_place = False
+            latex_suffix = ""
             for other_atr in attrs[2]:
                 if other_atr[0] == 'wwidth':
                     latex_wrap = True
@@ -78,6 +79,8 @@ def process_images(key, val, fmt, meta):
                 elif other_atr[0] == 'lpos':
                     latex_fig_place = True
                     latex_fig_place_pos = other_atr[1]
+                elif other_atr[0] == 'lts':
+                    latex_suffix = other_atr[1]
 
             if fmt in ['latex','pdf']:
                 # Only use "\caption" command if caption is not empty.
@@ -92,41 +95,47 @@ def process_images(key, val, fmt, meta):
                         \begin{{wrapfloat}}{{{cls}}}{{{pos}}}{{{size}}}
                         \centering
                         \includegraphics{{{file}}}
-                        """.format(cls=cls, file=target[0], size=latex_size,
-                                   pos=latex_wrap_pos)))]
+                        """.format(
+                                cls=cls+latex_suffix,
+                                file=target[0],
+                                size=latex_size,
+                                pos=latex_wrap_pos)))]
                         + caption_text
                         + [RawInline(fmt, textwrap.dedent(r"""
                         \label{{{id_tag}}}
                         \end{{wrapfloat}}
-                        """.format(cls=cls, id_tag=attrs[0])))])
+                        """.format(
+                                cls=cls+latex_suffix,
+                                id_tag=attrs[0])))])
                 elif latex_fig_place:
                     return ([RawInline(fmt, textwrap.dedent(r"""
                             \begin{{{cls}}}[{pos}]
                             \centering
-                            \includegraphics{{{file}}}""".format(cls=cls,
-                                                           pos=latex_fig_place_pos,
-                                                           file=target[0])))]
+                            \includegraphics{{{file}}}""".format(
+                                    cls=cls+latex_suffix,
+                                    pos=latex_fig_place_pos,
+                                    file=target[0])))]
                             + caption_text
                             + [RawInline(fmt, textwrap.dedent(r"""
                             \label{{{id_tag}}}
                             \end{{{cls}}}
-                            """.format(cls=cls, id_tag=attrs[0])))])
+                            """.format(
+                                    cls=cls+latex_suffix,
+                                    id_tag=attrs[0])))])
                 else:
-                    if cls not in ALT_LATEX_FIGS:
-                        # Stick to default processing if normal figure.
-                        return Image(attrs, caption, target)
-                    else:
-                        # Raw LaTeX if scheme, chart, etc.
-                        return ([RawInline(fmt, textwrap.dedent(r"""
-                            \begin{{{cls}}}
-                            \centering
-                            \includegraphics{{{file}}}""".format(cls=cls,
-                                                           file=target[0])))]
-                            + caption_text
-                            + [RawInline(fmt, textwrap.dedent(r"""
-                            \label{{{id_tag}}}
-                            \end{{{cls}}}
-                            """.format(cls=cls, id_tag=attrs[0])))])
+                    return ([RawInline(fmt, textwrap.dedent(r"""
+                        \begin{{{cls}}}
+                        \centering
+                        \includegraphics{{{file}}}""".format(
+                                cls=cls+latex_suffix,
+                                file=target[0])))]
+                        + caption_text
+                        + [RawInline(fmt, textwrap.dedent(r"""
+                        \label{{{id_tag}}}
+                        \end{{{cls}}}
+                        """.format(
+                                cls=cls+latex_suffix,
+                                id_tag=attrs[0])))])
             else:
                 # Add label to caption for non-LaTeX output.
 
