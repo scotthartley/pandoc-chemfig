@@ -56,6 +56,10 @@ can be specified using the ``lpos`` attribute. For example, setting
 ``lpos=H`` for a figure will result in the LaTeX code
 ``\begin{figure}[H]``.
 
+Suffixes to labels can be added via the ``lts`` attribute; for example,
+``lts=*`` will append \* to the label in the LaTeX begin/end statements.
+This is useful for using the figure\* environment.
+
 The default label formatting in non-LaTeX output can be overridden by
 passing the ``fig-abbr`` variable as metadata. For example, including
 the following:

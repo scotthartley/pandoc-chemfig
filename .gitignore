@@ -1,4 +1,5 @@
 # Specify filepatterns you want git to ignore.
 __pycache__/
 pandoc_chemfig.egg-info/
+dist/
 
