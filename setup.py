@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name="pandoc-chemfig",
-      version="1.1",
+      version="2.0",
       description=("Figure support for chemists in pandoc, with "
                    "cross-referencing and wrapping"),
       long_description=readme(),
