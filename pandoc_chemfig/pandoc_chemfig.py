@@ -103,7 +103,7 @@ def process_images(key, val, fmt, meta):
                 if 'wpos' in keys:
                     latex_wrap_pos = keys['wpos']
                 if 'lpos' in keys:
-                    latex_fix_place = True
+                    latex_fig_place = True
                     latex_fig_place_pos = keys['lpos']
                 if 'lts' in keys:
                     latex_suffix = keys['lts']
