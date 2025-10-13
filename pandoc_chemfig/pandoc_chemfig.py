@@ -54,7 +54,7 @@ def parse_refs(key, val, fmt, meta):
 def process_images(key, val, fmt, meta):
     """Runs through figures in the document, counting figures of a
     particular type. For LaTeX, adds appropriate code for non-"figure"
-    environments and leaves normal figures untouched (\label commands
+    environments and leaves normal figures untouched (label commands
     are added automatically already). If the wwidth attribute is passed
     to the figure, hardcodes the appropriate LaTeX code for the wrapfig
     package through the wrapfloat environment. For other formats, adds
@@ -97,16 +97,19 @@ def process_images(key, val, fmt, meta):
                 latex_wrap_pos = 'r' # Default position
                 latex_fig_place = False
                 latex_suffix = ""
-                if 'wwidth' in keys:
-                    latex_wrap = True
-                    latex_size = keys['wwidth']
-                if 'wpos' in keys:
-                    latex_wrap_pos = keys['wpos']
-                if 'lpos' in keys:
-                    latex_fig_place = True
-                    latex_fig_place_pos = keys['lpos']
-                if 'lts' in keys:
-                    latex_suffix = keys['lts']
+                if 'disable_pandoc_chemfig_wrap' in meta:
+                    latex_wrap = False
+                else:
+                    if 'wwidth' in keys:
+                        latex_wrap = True
+                        latex_size = keys['wwidth']
+                    if 'wpos' in keys:
+                        latex_wrap_pos = keys['wpos']
+                    if 'lpos' in keys:
+                        latex_fig_place = True
+                        latex_fig_place_pos = keys['lpos']
+                    if 'lts' in keys:
+                        latex_suffix = keys['lts']
 
                 # Only use "\caption" command if caption is not empty.
                 if fig_caption != []:
