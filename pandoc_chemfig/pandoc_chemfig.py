@@ -8,7 +8,7 @@ supports the wrapfig LaTeX package to wrap text around figures in pdf
 """
 
 from pandocfilters import toJSONFilters, Str, Plain, elt, Image, \
-    Strong, Emph, RawInline, Para
+    Strong, Emph, RawInline, Para, stringify
 import re, textwrap, os
 
 # Figure constructor not included in pandocfilters
@@ -75,6 +75,11 @@ def process_images(key, val, fmt, meta):
         image_caption = image['c'][1]
         image_target = image['c'][2]
 
+        if stringify(image_caption) != stringify(fig_caption[1][0]['c']):
+            alt_text = stringify(image_caption)
+        else:
+            alt_text = ""
+
         if image_class and fig_caption:
             # Go through key/value pairs and extract into dictionary.
             keys = {}
@@ -97,9 +102,7 @@ def process_images(key, val, fmt, meta):
                 latex_wrap_pos = 'r' # Default position
                 latex_fig_place = False
                 latex_suffix = ""
-                if 'disable_pandoc_chemfig_wrap' in meta:
-                    latex_wrap = False
-                else:
+                if 'disable_pandoc_chemfig_wrap' not in meta:
                     if 'wwidth' in keys:
                         latex_wrap = True
                         latex_size = keys['wwidth']
@@ -119,16 +122,20 @@ def process_images(key, val, fmt, meta):
                 else:
                     caption_text = []
 
+                alt_text_latex = ("alt={{{text}}}".format(text=alt_text)
+                                  if alt_text else "")
+
                 if latex_wrap:
                     raw_text = ([RawInline(fmt, textwrap.dedent(r"""
                         \begin{{wrapfloat}}{{{image_class}}}{{{pos}}}{{{size}}}
                         \centering
-                        \includegraphics{{{file}}}
+                        \includegraphics[{alt}]{{{file}}}
                         """.format(
                                 image_class=image_class+latex_suffix,
                                 file=image_target[0],
                                 size=latex_size,
-                                pos=latex_wrap_pos)))]
+                                pos=latex_wrap_pos,
+                                alt=alt_text_latex)))]
                         + caption_text
                         + [RawInline(fmt, textwrap.dedent(r"""
                         \label{{{id_tag}}}
@@ -140,10 +147,11 @@ def process_images(key, val, fmt, meta):
                     raw_text = ([RawInline(fmt, textwrap.dedent(r"""
                             \begin{{{image_class}}}[{pos}]
                             \centering
-                            \includegraphics{{{file}}}""".format(
+                            \includegraphics[{alt}]{{{file}}}""".format(
                                     image_class=image_class+latex_suffix,
                                     pos=latex_fig_place_pos,
-                                    file=image_target[0])))]
+                                    file=image_target[0],
+                                    alt=alt_text_latex)))]
                             + caption_text
                             + [RawInline(fmt, textwrap.dedent(r"""
                             \label{{{id_tag}}}
@@ -155,9 +163,10 @@ def process_images(key, val, fmt, meta):
                     raw_text = ([RawInline(fmt, textwrap.dedent(r"""
                         \begin{{{image_class}}}
                         \centering
-                        \includegraphics{{{file}}}""".format(
+                        \includegraphics[{alt}]{{{file}}}""".format(
                                 image_class=image_class+latex_suffix,
-                                file=image_target[0])))]
+                                file=image_target[0],
+                                alt=alt_text_latex)))]
                         + caption_text
                         + [RawInline(fmt, textwrap.dedent(r"""
                         \label{{{id_tag}}}
@@ -187,8 +196,8 @@ def process_images(key, val, fmt, meta):
                 else:
                     number = [Str(known_ids[image_id])]
 
-                new_caption = label + number + suffix + image_caption
-                new_image = Image(image_attrs, new_caption, image_target)
+                new_caption = label + number + suffix + fig_caption[1][0]['c']
+                new_image = Image(image_attrs, image_caption, image_target)
                 new_figure = Figure(fig_attrs, [None, [Plain(new_caption)]],
                                     [Plain([new_image])])
 
