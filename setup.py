@@ -7,9 +7,9 @@ def readme():
 
 
 setup(name="pandoc-chemfig",
-      version="3.0b",
-      description=("Figure and table support for chemists in pandoc, "
-                   "with cross-referencing and wrapping"),
+      version="3.0.1b",
+      description=("Figure, table, and equation support for chemists "
+                   "in pandoc, with cross-referencing and wrapping"),
       long_description=readme(),
       author="Scott Hartley",
       author_email="scott.hartley@miamioh.edu",

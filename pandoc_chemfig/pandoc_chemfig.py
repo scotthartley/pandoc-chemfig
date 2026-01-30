@@ -8,7 +8,7 @@ supports the wrapfig LaTeX package to wrap text around figures in pdf
 """
 
 from pandocfilters import toJSONFilters, Str, Plain, elt, Image, \
-    Strong, Emph, RawInline, Para, stringify
+    Strong, Emph, RawInline, Para, stringify, RawBlock
 import re, textwrap, os
 
 # Figure constructor not included in pandocfilters
@@ -17,6 +17,8 @@ Figure = elt('Figure', 3)
 
 # Reference regex pattern used to extract id_tag (for cross-referencing)
 REF_PAT = re.compile(r'\[?@([^\s\]]*)\]?')
+# Pattern to find IDs in the format {#eq:label}
+ID_PAT = re.compile(r'\{#([^\s}]*)\}')
 
 # Types of chemistry figures supported by LaTeX (e.g., with achemso)
 ALT_LATEX_FIGS = ['scheme', 'chart', 'graph']
@@ -50,6 +52,41 @@ def parse_refs(key, val, fmt, meta):
                     return RawInline(fmt, "\\ref{{{}}}".format(id_tag))
                 else:
                     return Str(known_ids[id_tag])
+
+
+def process_equations(key, val, fmt, meta):
+    if key == 'Para':
+        math_el = None
+        id_tag = None
+
+        for item in val:
+            if item['t'] == 'Math' and item['c'][0]['t'] == 'DisplayMath':
+                math_el = item
+            if item['t'] == 'Str':
+                match = ID_PAT.search(item['c'])
+                if match:
+                    id_tag = match.groups()[0]
+
+        if math_el and id_tag:
+            e_class = 'equation'
+            known_classes[e_class] = known_classes.get(e_class, 0) + 1
+            known_ids[id_tag] = str(known_classes[e_class])
+            math_code = math_el['c'][1]
+
+            if fmt in ['latex', 'pdf']:
+                # Use RawBlock instead of RawInline
+                content = textwrap.dedent(r"""
+                    \begin{{equation}}
+                    {code}
+                    \label{{{id}}}
+                    \end{{equation}}
+                    """).format(code=math_code, id=id_tag)
+                return RawBlock(fmt, content)
+            else:
+                # This already returns a Para (a Block), so it's fine!
+                num_suffix = [Str("\u00A0\u00A0(" + known_ids[id_tag] + ")")]
+                return Para([math_el] + num_suffix)
+
 
 def process_tables(key, val, fmt, meta):
     """Processes Table elements for cross-referencing and LaTeX wrapping.
@@ -263,7 +300,7 @@ def process_images(key, val, fmt, meta):
 
 
 def main():
-    toJSONFilters([process_images, process_tables, parse_refs])
+    toJSONFilters([process_images, process_tables, process_equations, parse_refs])
 
 
 if __name__ == '__main__':
